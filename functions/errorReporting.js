@@ -9,30 +9,25 @@ const getXlxs = (arr) => {
 	ws = wb.addWorksheet('Errors');
 
 	//Add headers
-	ws.cell(1, 1).string('Type');
-	ws.cell(1, 2).string('Error');
-	ws.cell(1, 3).string('Query');
-	ws.cell(1, 4).string('Id');
+	ws.cell(1, 1).string('Style');
+	ws.cell(1, 2).string('idStyle');
+	ws.cell(1, 3).string('Error');
 
 	//Loop through the error array to add to the worksheet
 	for (let i = 0; i < arr.length; ++i) {
 		let error = arr[i];
 		let row = i + 2;
 
-		if (error.type) {
-			ws.cell(row, 1).string(error.type);
+		if (error.Style) {
+			ws.cell(row, 1).string(error.Style);
+		}
+
+		if (error.idStyle) {
+			ws.cell(row, 2).string(error.idStyle.toString());
 		}
 
 		if (error.err) {
-			ws.cell(row, 2).string(error.err);
-		}
-
-		if (error.query) {
-			ws.cell(row, 3).string(error.query);
-		}
-
-		if (error.id) {
-			ws.cell(row, 4).string(error.id.toString());
+			ws.cell(row, 3).string(error.err);
 		}
 	}
 

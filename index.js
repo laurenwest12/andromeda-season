@@ -5,22 +5,40 @@ const { type } = require('./config');
 const { andromedaAuthorization } = require('./authorization');
 const { getStartTime } = require('./functions/getStartTime');
 const { getXlxs, sendErrorReport } = require('./functions/errorReporting');
+const { getSQLServerData } = require('./sql');
+const { updateLiveSeason } = require('./andromeda');
 
-app.listen(6000, async () => {
+const server = app.listen(6000, async () => {
 	console.log('App is listening...');
 	let authorizationResult = await andromedaAuthorization();
 
 	if (authorizationResult.indexOf('Error') === -1) {
 		console.log('Authorization complete');
-		const lastRunTime = await getStartTime(type);
 
-		let allErrors = [];
+		const processErr = await getSQLServerData('EXEC PopulateLiveSeason');
 
-		allErrors = allErrors.flat();
+		if (processErr.indexOf('Error') !== -1) {
+			process.kill(process.pid, 'SIGTERM');
+		} else {
+			// const lastRunTime = await getStartTime(type);
+			const liveSeason = await getSQLServerData(
+				`SELECT * FROM LiveSeason`
+			);
 
-		if (allErrors.length) {
-			getXlxs(allErrors);
-			await sendErrorReport(type);
+			const updateErrs = await updateLiveSeason(liveSeason);
+
+			if (updateErrs.length > 0) {
+				getXlxs(updateErrs);
+				await sendErrorReport(type);
+			}
+
+			process.kill(process.pid, 'SIGTERM');
 		}
 	}
+});
+
+process.on('SIGTERM', () => {
+	server.close(() => {
+		console.log('Process terminated');
+	});
 });

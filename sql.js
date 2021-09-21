@@ -19,6 +19,18 @@ const getLastRunTime = async (program) => {
 	});
 };
 
+const getSQLServerData = async (query) => {
+	return new Promise(async (resolve) => {
+		try {
+			await sql.query(connectionString, query, (err, rows) => {
+				err ? resolve(`Error: ${err}`) : resolve(rows);
+			});
+		} catch (err) {
+			resolve(`Error: ${err}`);
+		}
+	});
+};
+
 const insertTableStatement = (table, fields, values) => {
 	return `SELECT *
     INTO ${table}
@@ -56,6 +68,7 @@ const submitAllQueries = async (fn, data, table, fields) => {
 
 module.exports = {
 	getLastRunTime,
+	getSQLServerData,
 	submitQuery,
 	submitAllQueries,
 };

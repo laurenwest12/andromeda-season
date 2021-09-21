@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { andromedaAuthorization } = require('./authorization');
 const { url } = require('./config');
 
 const getAndromedaData = async (query, start) => {
@@ -19,6 +20,48 @@ const getAndromedaData = async (query, start) => {
 	}
 };
 
+const updateLiveSeason = async (data) => {
+	let errs = [];
+	for (let i = 3500; i < data.length; ++i) {
+		if (i % 1000 === 0) {
+			await andromedaAuthorization();
+			console.log('New session requested');
+		}
+
+		const { LiveSeason, Style, idStyle } = data[i];
+
+		try {
+			const res = await axios.post(
+				`${url}/bo/DevelopmentStyle/${idStyle}`,
+				{
+					Entity: {
+						cat170: LiveSeason,
+					},
+				}
+			);
+
+			if (!res.data.IsSuccess) {
+				errs.push({
+					Style,
+					idStyle,
+					err: res.data.Result,
+				});
+			}
+
+			console.log(Style, idStyle);
+		} catch (error) {
+			console.log(Style, idStyle, error.message);
+			errs.push({
+				Style,
+				idStyle,
+				err: error.message,
+			});
+		}
+	}
+	return errs;
+};
+
 module.exports = {
 	getAndromedaData,
+	updateLiveSeason,
 };
