@@ -20,7 +20,6 @@ const server = app.listen(6000, async () => {
 		if (processErr.indexOf('Error') !== -1) {
 			process.kill(process.pid, 'SIGTERM');
 		} else {
-			// const lastRunTime = await getStartTime(type);
 			const liveSeason = await getSQLServerData(
 				`SELECT * FROM LiveSeason`
 			);

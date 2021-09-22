@@ -22,7 +22,7 @@ const getAndromedaData = async (query, start) => {
 
 const updateLiveSeason = async (data) => {
 	let errs = [];
-	for (let i = 3500; i < data.length; ++i) {
+	for (let i = 0; i < data.length; ++i) {
 		if (i % 1000 === 0) {
 			await andromedaAuthorization();
 			console.log('New session requested');
