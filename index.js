@@ -33,10 +33,9 @@ const server = app.listen(6009, async () => {
 
 			process.kill(process.pid, 'SIGTERM');
 		}
-	} 
-
-	process.kill(process.pid, 'SIGTERM');
-
+	} else {
+		process.kill(process.pid, 'SIGTERM');
+	}
 });
 
 process.on('SIGTERM', () => {
