@@ -8,7 +8,7 @@ const { getXlxs, sendErrorReport } = require('./functions/errorReporting');
 const { getSQLServerData } = require('./sql');
 const { updateLiveSeason } = require('./andromeda');
 
-const server = app.listen(6000, async () => {
+const server = app.listen(6009, async () => {
 	console.log('App is listening...');
 	let authorizationResult = await andromedaAuthorization();
 
@@ -33,7 +33,10 @@ const server = app.listen(6000, async () => {
 
 			process.kill(process.pid, 'SIGTERM');
 		}
-	}
+	} 
+
+	process.kill(process.pid, 'SIGTERM');
+
 });
 
 process.on('SIGTERM', () => {
