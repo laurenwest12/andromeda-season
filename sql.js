@@ -1,36 +1,92 @@
-const sql = require('msnodesqlv8');
-const { server, database, driver } = require('./config');
+// const sql = require('msnodesqlv8');
+// const { server, database, driver } = require('./config');
 
-const connectionString = `server=${server};Database=${database};Trusted_Connection=Yes;Driver=${driver}`;
+// const connectionString = `server=${server};Database=${database};Trusted_Connection=Yes;Driver=${driver}`;
+
+const sql = require('mssql');
+const { server, database, sqlUser, sqlPass } = require('./config.js');
+
+const pool = new sql.ConnectionPool({
+	user: sqlUser,
+	password: sqlPass,
+	server,
+	database,
+	trustServerCertificate: true,
+	requestTimeout: 500000,
+	encrypt: false
+});
+
+const connectDb = async () => {
+	try {
+	  await pool.connect();
+	} catch (err) {
+	  throw err;
+	} 
+};
+
 
 const getLastRunTime = async (program) => {
-	return new Promise(async (resolve) => {
-		try {
-			await sql.query(
-				connectionString,
-				`SELECT TOP 1 * FROM AndromedaSchedule WHERE Program = '${program}' ORDER BY CAST(LastRunTime as datetime) DESC`,
-				(err, rows) => {
-					err ? resolve(`Error: ${err}`) : resolve(rows);
-				}
-			);
-		} catch (err) {
-			resolve(`Error: ${err}`);
-		}
-	});
+	try {
+	  await connectDb();
+	  const res = await pool.query(
+		`SELECT TOP 1 * FROM AndromedaSchedule WHERE Program = '${program}' ORDER BY CAST(LastRunTime as datetime) DESC`
+	  );
+	  return res?.recordset;
+	} catch (err) {
+	  return `Error: ${err?.message}`
+	}
 };
+
+
+// const getLastRunTime = async (program) => {
+// 	return new Promise(async (resolve) => {
+// 		try {
+// 			await sql.query(
+// 				connectionString,
+// 				`SELECT TOP 1 * FROM AndromedaSchedule WHERE Program = '${program}' ORDER BY CAST(LastRunTime as datetime) DESC`,
+// 				(err, rows) => {
+// 					err ? resolve(`Error: ${err}`) : resolve(rows);
+// 				}
+// 			);
+// 		} catch (err) {
+// 			resolve(`Error: ${err}`);
+// 		}
+// 	});
+// };
 
 const getSQLServerData = async (query) => {
-	return new Promise(async (resolve) => {
-		try {
-			await sql.query(connectionString, query, (err, rows) => {
-				err ? resolve(`Error: ${err}`) : resolve(rows);
-			});
-		} catch (err) {
-			resolve(`Error: ${err}`);
-		}
-	});
+	await connectDb();	
+	try {
+	  await connectDb();
+	  const res = await pool.query(query);
+	  return res?.recordset;
+	} catch (err) {
+	  return `Error: ${err?.message}`
+	}
 };
 
+// const getSQLServerData = async (query) => {
+// 	return new Promise(async (resolve) => {
+// 		try {
+// 			await sql.query(connectionString, query, (err, rows) => {
+// 				err ? resolve(`Error: ${err}`) : resolve(rows);
+// 			});
+// 		} catch (err) {
+// 			resolve(`Error: ${err}`);
+// 		}
+// 	});
+// };
+
+const executeProcedure = async (proc) => {
+	try {
+		await connectDb()
+		await pool.request().execute(proc);
+		return `Complete`
+	} catch (err) {
+		return `Error: ${err?.message}`
+	}
+};
+  
 const insertTableStatement = (table, fields, values) => {
 	return `SELECT *
     INTO ${table}
@@ -42,16 +98,27 @@ const insertStatement = (table, fields, values) => {
 };
 
 const submitQuery = async (query) => {
-	return new Promise(async (resolve) => {
-		try {
-			await sql.query(connectionString, query, (err, rows) => {
-				err ? resolve(`Error: ${err.message}`) : resolve('Complete');
-			});
-		} catch (err) {
-			resolve(`Error: ${err}`);
-		}
-	});
+	try {
+		await connectDb()
+		await pool.query(query)
+		return `Complete`
+	} catch (err) {
+		return `Error: ${err?.message}`
+	}
 };
+
+
+// const submitQuery = async (query) => {
+// 	return new Promise(async (resolve) => {
+// 		try {
+// 			await sql.query(connectionString, query, (err, rows) => {
+// 				err ? resolve(`Error: ${err.message}`) : resolve('Complete');
+// 			});
+// 		} catch (err) {
+// 			resolve(`Error: ${err}`);
+// 		}
+// 	});
+// };
 
 const submitAllQueries = async (fn, data, table, fields) => {
 	const errors = [];
@@ -69,6 +136,7 @@ const submitAllQueries = async (fn, data, table, fields) => {
 module.exports = {
 	getLastRunTime,
 	getSQLServerData,
+	executeProcedure,
 	submitQuery,
 	submitAllQueries,
 };

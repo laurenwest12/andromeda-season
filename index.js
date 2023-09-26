@@ -5,17 +5,17 @@ const { type } = require('./config');
 const { andromedaAuthorization } = require('./authorization');
 const { getStartTime } = require('./functions/getStartTime');
 const { getXlxs, sendErrorReport } = require('./functions/errorReporting');
-const { getSQLServerData } = require('./sql');
+const { getSQLServerData, executeProcedure } = require('./sql');
 const { updateLiveSeason } = require('./andromeda');
 
 const server = app.listen(6009, async () => {
-	console.log('App is listening...');
+	console.log('Andromeda season is running...');
 	let authorizationResult = await andromedaAuthorization();
 
 	if (authorizationResult.indexOf('Error') === -1) {
 		console.log('Authorization complete');
 
-		const processErr = await getSQLServerData('EXEC PopulateLiveSeason');
+		const processErr = await executeProcedure('PopulateLiveSeason');
 
 		if (processErr.indexOf('Error') !== -1) {
 			process.kill(process.pid, 'SIGTERM');
@@ -42,4 +42,16 @@ process.on('SIGTERM', () => {
 	server.close(() => {
 		console.log('Process terminated');
 	});
+});
+
+// Register an unhandled exception handler
+process.on('uncaughtException', async (err) => {
+  // Exit the application with an error code
+  process.exit(1);
+});
+
+// Register an unhandled exception handler
+process.on('unhandledRejection', async (err) => {
+  // Exit the application with an error code
+  process.exit(1);
 });

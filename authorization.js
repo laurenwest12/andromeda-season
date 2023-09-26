@@ -1,5 +1,6 @@
 const axios = require('axios');
 const CryptoJS = require('crypto-js');
+const https = require('https');
 const { url, user, applicationKey } = require('./config');
 
 const guid = () => {
@@ -67,6 +68,7 @@ const andromedaAuthorization = async () => {
 
 	//Set the retrieved Session ID for all axios calls.
 	axios.defaults.headers.common['Authorization'] = `Bearer ${SessionID}`;
+	axios.defaults.httpsAgent = new https.Agent({ keepAlive: true });
 	return 'Complete';
 };
 
