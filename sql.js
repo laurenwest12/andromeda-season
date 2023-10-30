@@ -24,7 +24,6 @@ const connectDb = async () => {
 	} 
 };
 
-
 const getLastRunTime = async (program) => {
 	try {
 	  await connectDb();
@@ -36,7 +35,6 @@ const getLastRunTime = async (program) => {
 	  return `Error: ${err?.message}`
 	}
 };
-
 
 // const getLastRunTime = async (program) => {
 // 	return new Promise(async (resolve) => {
@@ -77,16 +75,6 @@ const getSQLServerData = async (query) => {
 // 	});
 // };
 
-const executeProcedure = async (proc) => {
-	try {
-		await connectDb()
-		await pool.request().execute(proc);
-		return `Complete`
-	} catch (err) {
-		return `Error: ${err?.message}`
-	}
-};
-  
 const insertTableStatement = (table, fields, values) => {
 	return `SELECT *
     INTO ${table}
@@ -107,7 +95,6 @@ const submitQuery = async (query) => {
 	}
 };
 
-
 // const submitQuery = async (query) => {
 // 	return new Promise(async (resolve) => {
 // 		try {
@@ -119,6 +106,16 @@ const submitQuery = async (query) => {
 // 		}
 // 	});
 // };
+
+const executeProcedure = async (proc) => {
+	try {
+		await connectDb()
+		await pool.request().execute(proc);
+		return `Complete`
+	} catch (err) {
+		return `Error: ${err?.message}`
+	}
+};
 
 const submitAllQueries = async (fn, data, table, fields) => {
 	const errors = [];
