@@ -6,43 +6,32 @@ const { andromedaAuthorization } = require('./authorization');
 const { getStartTime } = require('./functions/getStartTime');
 const { getXlxs, sendErrorReport } = require('./functions/errorReporting');
 const { getSQLServerData, executeProcedure } = require('./sql');
-const { updateLiveSeason } = require('./andromeda');
+const { updateLiveSeason, forceDownCostSheet } = require('./andromeda');
 
-const server = app.listen(6009, async () => {
-	console.log('Andromeda season is running...');
-	let authorizationResult = await andromedaAuthorization();
+// const server = app.listen(6009, async () => {
+const main = async () => {
+  console.log('Andromeda Live Season is running...');
 
-	if (authorizationResult.indexOf('Error') === -1) {
-		console.log('Authorization complete');
+  try {
+    await andromedaAuthorization();
+    await executeProcedure('PopulateLiveSeason');
+    const data = await getSQLServerData(`SELECT * FROM LiveSeason`);
+    const updateErrs = await updateLiveSeason(data);
+    const forceErrs = await forceDownCostSheet();
+    const errors = [...updateErrs, ...forceErrs];
 
-		const processErr = await executeProcedure('PopulateLiveSeason');
+    if (errors.flat().length) {
+      getXlxs(errors.flat());
+      await sendErrorReport(type);
+    }
+    process.exit(0);
+  } catch (err) {
+    console.log(err);
+    process.exit(1);
+  }
+};
 
-		if (processErr.indexOf('Error') !== -1) {
-			process.kill(process.pid, 'SIGTERM');
-		} else {
-			const liveSeason = await getSQLServerData(
-				`SELECT * FROM LiveSeason`
-			);
-
-			const updateErrs = await updateLiveSeason(liveSeason);
-
-			if (updateErrs.length > 0) {
-				getXlxs(updateErrs);
-				await sendErrorReport(type);
-			}
-
-			process.kill(process.pid, 'SIGTERM');
-		}
-	} else {
-		process.kill(process.pid, 'SIGTERM');
-	}
-});
-
-process.on('SIGTERM', () => {
-	server.close(() => {
-		console.log('Process terminated');
-	});
-});
+main();
 
 // Register an unhandled exception handler
 process.on('uncaughtException', async (err) => {
