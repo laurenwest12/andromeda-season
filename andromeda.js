@@ -70,7 +70,10 @@ INNER JOIN [Andromeda-DownFrom].[dbo].[CostSheetHeaderImportArchive] C
 on S.idStyle = C.idStyle
 and C.CostSheetName = 'LINE PLAN'
 and C.MostRecent = 'Yes'
+and C.Season = LiveSeason
 and C.ERPReady = 'Yes'`);
+
+  console.log(data);
 
   for (let sheet of data) {
     const { idStyle, Style, idCost } = sheet;
