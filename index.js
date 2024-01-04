@@ -59,8 +59,8 @@ const main = async () => {
     );
     productionErrs?.length && errors.push(productionErrs);
 
-    // const forceErrs = await forceDownCostSheet();
-    // const errors = [...updateErrs, ...forceErrs];
+    const forceErrs = await forceDownCostSheet();
+    const errors = [...updateErrs, ...forceErrs];
 
     if (errors.flat().length) {
       getXlxs(errors.flat());
