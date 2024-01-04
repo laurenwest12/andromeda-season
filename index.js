@@ -11,8 +11,6 @@ const { updateLivePeriod, forceDownCostSheet } = require('./andromeda');
 // const server = app.listen(6009, async () => {
 const main = async () => {
   console.log('Andromeda Live Season is running...');
-  const errors = [];
-
   try {
     await andromedaAuthorization();
 
@@ -22,21 +20,20 @@ const main = async () => {
       'SELECT * FROM [Andromeda-DownFrom].[dbo].[LiveSeason]'
     );
     const seasonErrs = await updateLivePeriod(season, 'cat170', 'LiveSeason');
-    seasonErrs?.length && errors.push(seasonErrs);
 
     // Live Finance Period
     await executeProcedure('PopulateLiveFinancialPeriod');
     const financial = await getSQLServerData(
       `SELECT * FROM LiveFinancialPeriod`
     );
+    console.log(financial);
+
     // Update the live period in Andromeda
     const financialErrs = await updateLivePeriod(
       financial,
       'cat450',
       'LiveFinancialPeriod'
     );
-    financialErrs?.length && errors.push(financialErrs);
-
     // Live NuOrder Period
     await executeProcedure('PopulateLiveNuOrderPeriod');
     const nuorder = await getSQLServerData(`SELECT * FROM LiveNuOrderPeriod`);
@@ -45,7 +42,6 @@ const main = async () => {
       'cat451',
       'SeasonalSetting'
     );
-    nuorderErrs?.length && errors.push(nuorderErrs);
 
     // Live Production Period
     await executeProcedure('PopulateLiveProductionPeriod');
@@ -57,10 +53,15 @@ const main = async () => {
       'cat452',
       'LiveProductionPeriod'
     );
-    productionErrs?.length && errors.push(productionErrs);
 
     const forceErrs = await forceDownCostSheet();
-    const errors = [...updateErrs, ...forceErrs];
+    const errors = [
+      ...seasonErrs,
+      ...financialErrs,
+      ...nuorderErrs,
+      ...productionErrs,
+      ...forceErrs,
+    ];
 
     if (errors.flat().length) {
       getXlxs(errors.flat());

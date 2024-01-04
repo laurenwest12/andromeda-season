@@ -34,8 +34,6 @@ const updateLivePeriod = async (data, cat, field) => {
     let body = { Entity: {} };
     body.Entity[cat] = season.trim();
 
-    console.log(body);
-
     try {
       const res = await axios.post(
         `${url}/bo/DevelopmentStyle/${idStyle}`,
@@ -46,6 +44,7 @@ const updateLivePeriod = async (data, cat, field) => {
         errs.push({
           Style,
           idStyle,
+          field,
           err: res.data.Result,
         });
       }
@@ -56,6 +55,7 @@ const updateLivePeriod = async (data, cat, field) => {
       errs.push({
         Style,
         idStyle,
+        field,
         err: error.message,
       });
     }
@@ -69,7 +69,7 @@ const forceDownCostSheet = async () => {
 	,S.[Style]
 	,S.[idStyle]
 	,C.[idCost]
-FROM [Andromeda-DownFrom].[dbo].[LiveFinancialPeriod] S
+FROM [dbo].[LiveFinancialPeriod] S
 INNER JOIN [Andromeda-DownFrom].[dbo].[CostSheetHeaderImportArchive] C
 on S.idStyle = C.idStyle
 and C.CostSheetName = 'LINE PLAN'
@@ -88,6 +88,7 @@ and C.ERPReady = 'Yes'`);
         errors.push({
           Style,
           idStyle,
+          field: 'Force Down Cost Sheet',
           err: res?.data?.Result,
         });
       }
@@ -96,6 +97,7 @@ and C.ERPReady = 'Yes'`);
       errors.push({
         Style,
         idStyle,
+        field: 'Force Down Cost Sheet',
         err: err?.message,
       });
     }
