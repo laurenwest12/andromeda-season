@@ -6,19 +6,62 @@ const { andromedaAuthorization } = require('./authorization');
 const { getStartTime } = require('./functions/getStartTime');
 const { getXlxs, sendErrorReport } = require('./functions/errorReporting');
 const { getSQLServerData, executeProcedure } = require('./sql');
-const { updateLiveSeason, forceDownCostSheet } = require('./andromeda');
+const { updateLivePeriod, forceDownCostSheet } = require('./andromeda');
 
 // const server = app.listen(6009, async () => {
 const main = async () => {
   console.log('Andromeda Live Season is running...');
-
   try {
     await andromedaAuthorization();
-    await executeProcedure('PopulateLiveSeason');
-    const data = await getSQLServerData(`SELECT * FROM LiveSeason`);
-    const updateErrs = await updateLiveSeason(data);
+
+    // LiveSeason
+    await executeProcedure('[Andromeda-DownFrom].[dbo].[PopulateLiveSeason]');
+    const season = await getSQLServerData(
+      'SELECT * FROM [Andromeda-DownFrom].[dbo].[LiveSeason]'
+    );
+    const seasonErrs = await updateLivePeriod(season, 'cat170', 'LiveSeason');
+
+    // Live Finance Period
+    await executeProcedure('PopulateLiveFinancialPeriod');
+    const financial = await getSQLServerData(
+      `SELECT * FROM LiveFinancialPeriod`
+    );
+    console.log(financial);
+
+    // Update the live period in Andromeda
+    const financialErrs = await updateLivePeriod(
+      financial,
+      'cat450',
+      'LiveFinancialPeriod'
+    );
+    // Live NuOrder Period
+    await executeProcedure('PopulateLiveNuOrderPeriod');
+    const nuorder = await getSQLServerData(`SELECT * FROM LiveNuOrderPeriod`);
+    const nuorderErrs = await updateLivePeriod(
+      nuorder,
+      'cat451',
+      'SeasonalSetting'
+    );
+
+    // Live Production Period
+    await executeProcedure('PopulateLiveProductionPeriod');
+    const production = await getSQLServerData(
+      'SELECT * FROM LiveProductionPeriod'
+    );
+    const productionErrs = await updateLivePeriod(
+      production,
+      'cat452',
+      'LiveProductionPeriod'
+    );
+
     const forceErrs = await forceDownCostSheet();
-    const errors = [...updateErrs, ...forceErrs];
+    const errors = [
+      ...seasonErrs,
+      ...financialErrs,
+      ...nuorderErrs,
+      ...productionErrs,
+      ...forceErrs,
+    ];
 
     if (errors.flat().length) {
       getXlxs(errors.flat());

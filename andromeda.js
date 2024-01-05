@@ -21,7 +21,7 @@ const getAndromedaData = async (query, start) => {
   }
 };
 
-const updateLiveSeason = async (data) => {
+const updateLivePeriod = async (data, cat, field) => {
   let errs = [];
   for (let i = 0; i < data.length; ++i) {
     if (i % 1000 === 0) {
@@ -29,19 +29,22 @@ const updateLiveSeason = async (data) => {
       console.log('New session requested');
     }
 
-    const { LiveSeason, Style, idStyle } = data[i];
+    const { Style, idStyle } = data[i];
+    const season = data[i][field];
+    let body = { Entity: {} };
+    body.Entity[cat] = season.trim();
 
     try {
-      const res = await axios.post(`${url}/bo/DevelopmentStyle/${idStyle}`, {
-        Entity: {
-          cat170: LiveSeason,
-        },
-      });
+      const res = await axios.post(
+        `${url}/bo/DevelopmentStyle/${idStyle}`,
+        body
+      );
 
       if (!res.data.IsSuccess) {
         errs.push({
           Style,
           idStyle,
+          field,
           err: res.data.Result,
         });
       }
@@ -52,6 +55,7 @@ const updateLiveSeason = async (data) => {
       errs.push({
         Style,
         idStyle,
+        field,
         err: error.message,
       });
     }
@@ -61,19 +65,17 @@ const updateLiveSeason = async (data) => {
 
 const forceDownCostSheet = async () => {
   const errors = [];
-  const data = await getSQLServerData(`SELECT [LiveSeason]
+  const data = await getSQLServerData(`SELECT [LiveFinancialPeriod]
 	,S.[Style]
 	,S.[idStyle]
 	,C.[idCost]
-FROM [Andromeda-DownFrom].[dbo].[LiveSeason] S
+FROM [dbo].[LiveFinancialPeriod] S
 INNER JOIN [Andromeda-DownFrom].[dbo].[CostSheetHeaderImportArchive] C
 on S.idStyle = C.idStyle
 and C.CostSheetName = 'LINE PLAN'
 and C.MostRecent = 'Yes'
-and C.Season = LiveSeason
+and C.Season = LiveFinancialPeriod
 and C.ERPReady = 'Yes'`);
-
-  console.log(data);
 
   for (let sheet of data) {
     const { idStyle, Style, idCost } = sheet;
@@ -86,6 +88,7 @@ and C.ERPReady = 'Yes'`);
         errors.push({
           Style,
           idStyle,
+          field: 'Force Down Cost Sheet',
           err: res?.data?.Result,
         });
       }
@@ -94,6 +97,7 @@ and C.ERPReady = 'Yes'`);
       errors.push({
         Style,
         idStyle,
+        field: 'Force Down Cost Sheet',
         err: err?.message,
       });
     }
@@ -103,6 +107,6 @@ and C.ERPReady = 'Yes'`);
 
 module.exports = {
   getAndromedaData,
-  updateLiveSeason,
+  updateLivePeriod,
   forceDownCostSheet,
 };
