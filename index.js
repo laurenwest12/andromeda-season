@@ -1,9 +1,5 @@
-const express = require('express');
-const app = express();
-
 const { type } = require('./config');
 const { andromedaAuthorization } = require('./authorization');
-const { getStartTime } = require('./functions/getStartTime');
 const { getXlxs, sendErrorReport } = require('./functions/errorReporting');
 const { getSQLServerData, executeProcedure } = require('./sql');
 const { updateLivePeriod, forceDownCostSheet } = require('./andromeda');
@@ -26,7 +22,6 @@ const main = async () => {
     const financial = await getSQLServerData(
       `SELECT * FROM LiveFinancialPeriod`
     );
-    console.log(financial);
 
     // Update the live period in Andromeda
     const financialErrs = await updateLivePeriod(
