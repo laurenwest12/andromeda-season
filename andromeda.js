@@ -72,7 +72,6 @@ const forceDownCostSheet = async () => {
 FROM [dbo].[LiveFinancialPeriod] S
 INNER JOIN [Andromeda-DownFrom].[dbo].[CostSheetHeaderImportArchive] C
 on S.idStyle = C.idStyle
-and C.CostSheetName = 'LINE PLAN'
 and C.MostRecent = 'Yes'
 and C.Season = LiveFinancialPeriod
 and C.ERPReady = 'Yes'`);
