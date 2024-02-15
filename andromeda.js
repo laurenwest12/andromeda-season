@@ -65,15 +65,15 @@ const updateLivePeriod = async (data, cat, field) => {
 
 const forceDownCostSheet = async () => {
   const errors = [];
-  const data = await getSQLServerData(`SELECT [LiveFinancialPeriod]
+  const data = await getSQLServerData(`SELECT [LiveProductionPeriod]
 	,S.[Style]
 	,S.[idStyle]
 	,C.[idCost]
-FROM [dbo].[LiveFinancialPeriod] S
+FROM [dbo].[LiveProductionPeriod] S
 INNER JOIN [Andromeda-DownFrom].[dbo].[CostSheetHeaderImportArchive] C
 on S.idStyle = C.idStyle
 and C.MostRecent = 'Yes'
-and C.Season = LiveFinancialPeriod
+and C.Season = LiveProductionPeriod
 and C.ERPReady = 'Yes'`);
 
   for (let sheet of data) {
