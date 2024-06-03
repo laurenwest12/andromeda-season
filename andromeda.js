@@ -24,22 +24,30 @@ const getAndromedaData = async (query, start) => {
 const updateLivePeriod = async (data, cat, field) => {
   let errs = [];
   for (let i = 0; i < data.length; ++i) {
-    if (i % 1000 === 0) {
+    // For every 100 records, request a new session
+    if (i % 100 === 0) {
       await andromedaAuthorization();
       console.log('New session requested');
     }
 
+    // Extract the style and the id of that style in Andromeda
     const { Style, idStyle } = data[i];
+
+    // Get the field value from the data
     const season = data[i][field];
+
+    // Initialize the Andromeda body with the field to update
     let body = { Entity: {} };
     body.Entity[cat] = season.trim();
 
     try {
+      // Update the style in Andromeda
       const res = await axios.post(
         `${url}/bo/DevelopmentStyle/${idStyle}`,
         body
       );
 
+      // If the request is not successful, push the error to the errors array
       if (!res.data.IsSuccess) {
         errs.push({
           Style,
@@ -51,6 +59,7 @@ const updateLivePeriod = async (data, cat, field) => {
 
       console.log(Style, idStyle);
     } catch (error) {
+      // If there is an unexpected error, push the error to the errors array
       console.log(Style, idStyle, error.message);
       errs.push({
         Style,
@@ -65,6 +74,7 @@ const updateLivePeriod = async (data, cat, field) => {
 
 const forceDownCostSheet = async () => {
   const errors = [];
+  // If the live production period changed in this run, join onto the CostSheet for the live production season and force it down from Andromeda
   const production = await getSQLServerData(`SELECT [LiveProductionPeriod]
 	,S.[Style]
 	,S.[idStyle]
@@ -76,6 +86,7 @@ and C.MostRecent = 'Yes'
 and C.Season = LiveProductionPeriod
 and C.ERPReady = 'Yes'`);
 
+  // If the live financial period changed in this run, join onto the CostSheet for the live financial season and force it down from Andromeda
   const finance = await getSQLServerData(`SELECT [LiveFinancialPeriod]
   ,S.[Style]
   ,S.[idStyle]
@@ -87,15 +98,17 @@ and C.ERPReady = 'Yes'`);
   and C.Season = LiveFinancialPeriod
   and C.ERPReady = 'Yes'`);
 
-  const data = [...production, ...finance]
+  const data = [...production, ...finance];
 
   for (let sheet of data) {
     const { idStyle, Style, idCost } = sheet;
     try {
+      // For any cost sheets that need to be forced down, update the IsExportReady field to true. The value will already have been true in Andromeda as shown in queries above, however this will force the cost sheet to come back from Andromeda so that it can process through the ERP.
       const res = await axios.post(`${url}/bo/CostSheet/${idCost}`, {
         isexportready: true,
       });
 
+      // If the request is not successful, push the error to the errors array
       if (!res?.data?.IsSuccess) {
         errors.push({
           Style,
@@ -114,6 +127,7 @@ and C.ERPReady = 'Yes'`);
       });
     }
   }
+  // Return any errors
   return errors;
 };
 
