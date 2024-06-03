@@ -2,7 +2,7 @@
 
 ## Description
 
-Gets any images that have been created or modified since the last run time, downloads them, and resizes them.
+Update the Live Financial Period, Live NuOrder Period, and Live Production Period flags in Andromeda for any styles based on their values in StyleProfile or StyleProfileDetail.
 
 ## Schedule
 
