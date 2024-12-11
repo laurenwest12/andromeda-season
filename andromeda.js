@@ -131,6 +131,28 @@ and C.ERPReady = 'Yes'`);
   return errors;
 };
 
+const deleteStyle = async (idStyle) => {
+  try {
+    // Delete style related data
+    await getSQLServerData(
+      `DELETE FROM [Andromeda-DownFrom].[dbo].[StyleImportArchive] WHERE idStyle = ${idStyle}`
+    );
+    await getSQLServerData(
+      `DELETE FROM [ECDB].[dbo].[StyleProfileDetail] WHERE id_style = ${idStyle}`
+    );
+
+    // Delete style color related data
+    await getSQLServerData(
+      `DELETE FROM [dbo].[StyleColorImportArchive] WHERE idStyle = ${idStyle}`
+    );
+    await getSQLServerData(
+      `DELETE FROM [ECDB].[dbo].[StyleColorProfileDetail] WHERE id_style = ${idStyle}`
+    );
+  } catch (err) {
+    return err;
+  }
+};
+
 module.exports = {
   getAndromedaData,
   updateLivePeriod,
