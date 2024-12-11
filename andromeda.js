@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { andromedaAuthorization } = require('./authorization');
 const { url } = require('./config');
-const { getSQLServerData } = require('./sql');
+const { getSQLServerData, submitQuery } = require('./sql');
 
 const getAndromedaData = async (query, start) => {
   try {
@@ -67,6 +67,10 @@ const updateLivePeriod = async (data, cat, field) => {
         field,
         err: error.message,
       });
+
+      if (error.message === 'Request failed with status code 404') {
+        await deleteStyle(idStyle)
+      }
     }
   }
   return errs;
@@ -118,7 +122,6 @@ and C.ERPReady = 'Yes'`);
         });
       }
     } catch (err) {
-      console.log(err);
       errors.push({
         Style,
         idStyle,
@@ -134,6 +137,7 @@ and C.ERPReady = 'Yes'`);
 const deleteStyle = async (idStyle) => {
   try {
     // Delete style related data
+    await submitQuery(`INSERT INTO StyleDeleted SELECT *, CURRENT_TIMESTAMP FROM StyleImportArchive WHERE idStyle = ${idStyle}`)
     await getSQLServerData(
       `DELETE FROM [Andromeda-DownFrom].[dbo].[StyleImportArchive] WHERE idStyle = ${idStyle}`
     );
@@ -142,8 +146,9 @@ const deleteStyle = async (idStyle) => {
     );
 
     // Delete style color related data
+    await submitQuery(`INSERT INTO StyleColorDeleted SELECT *, CURRENT_TIMESTAMP FROM StyleColorImportArchive WHERE idStyle = ${idStyle}`)
     await getSQLServerData(
-      `DELETE FROM [dbo].[StyleColorImportArchive] WHERE idStyle = ${idStyle}`
+      `DELETE FROM [Andromeda-DownFrom].[dbo].[StyleColorImportArchive] WHERE idStyle = ${idStyle}`
     );
     await getSQLServerData(
       `DELETE FROM [ECDB].[dbo].[StyleColorProfileDetail] WHERE id_style = ${idStyle}`

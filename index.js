@@ -1,3 +1,4 @@
+// process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
 const { type } = require('./config');
 const { andromedaAuthorization } = require('./authorization');
 const { getXlxs, sendErrorReport } = require('./functions/errorReporting');
@@ -11,15 +12,15 @@ const main = async () => {
     // Authorize connection to Andromeda API
     await andromedaAuthorization();
 
-    // Live Season
-    // Run procedure to generate the live season for each style and find any that don't match
-    // This is done by checking in StyleProfile for the season that is marked MostCurrentSeasonFlag = 'Yes' and comapring that season to the value in LiveSeason in Andromeda
-    await executeProcedure('[Andromeda-DownFrom].[dbo].[PopulateLiveSeason]');
-    const season = await getSQLServerData(
-      'SELECT * FROM [Andromeda-DownFrom].[dbo].[LiveSeason]'
-    );
-    // Update the LiveSeason field
-    const seasonErrs = await updateLivePeriod(season, 'cat170', 'LiveSeason');
+    // // Live Season
+    // // Run procedure to generate the live season for each style and find any that don't match
+    // // This is done by checking in StyleProfile for the season that is marked MostCurrentSeasonFlag = 'Yes' and comapring that season to the value in LiveSeason in Andromeda
+    // await executeProcedure('[Andromeda-DownFrom].[dbo].[PopulateLiveSeason]');
+    // const season = await getSQLServerData(
+    //   'SELECT * FROM [Andromeda-DownFrom].[dbo].[LiveSeason]'
+    // );
+    // // Update the LiveSeason field
+    // const seasonErrs = await updateLivePeriod(season, 'cat170', 'LiveSeason');
 
     // Live Finance Period
     // Run procedure to generate the live financial period for each style and find any that don't match
@@ -66,7 +67,7 @@ const main = async () => {
 
     // If there are any errors, send an email with the errors
     const errors = [
-      ...seasonErrs,
+      // ...seasonErrs,
       ...financialErrs,
       ...nuorderErrs,
       ...productionErrs,
