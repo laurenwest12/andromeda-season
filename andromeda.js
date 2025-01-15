@@ -49,6 +49,7 @@ const updateLivePeriod = async (data, cat, field) => {
 
       // If the request is not successful, push the error to the errors array
       if (!res.data.IsSuccess) {
+        console.log('Andromeda error', res?.data?.Result)
         errs.push({
           Style,
           idStyle,
@@ -56,11 +57,9 @@ const updateLivePeriod = async (data, cat, field) => {
           err: res.data.Result,
         });
       }
-
-      console.log(Style, idStyle);
     } catch (error) {
       // If there is an unexpected error, push the error to the errors array
-      console.log(Style, idStyle, error.message);
+      console.log('Catch erorr', Style, idStyle, error.message);
       errs.push({
         Style,
         idStyle,
@@ -136,8 +135,9 @@ and C.ERPReady = 'Yes'`);
 
 const deleteStyle = async (idStyle) => {
   try {
+    console.log(idStyle)
     // Delete style related data
-    await submitQuery(`INSERT INTO StyleDeleted SELECT *, CURRENT_TIMESTAMP FROM StyleImportArchive WHERE idStyle = ${idStyle}`)
+    await submitQuery(`INSERT INTO [Andromeda-DownFrom].[dbo].[StyleDeleted] SELECT *, CURRENT_TIMESTAMP FROM [Andromeda-DownFrom].[dbo].[StyleImportArchive] WHERE idStyle = ${idStyle}`)
     await getSQLServerData(
       `DELETE FROM [Andromeda-DownFrom].[dbo].[StyleImportArchive] WHERE idStyle = ${idStyle}`
     );
@@ -146,7 +146,7 @@ const deleteStyle = async (idStyle) => {
     );
 
     // Delete style color related data
-    await submitQuery(`INSERT INTO StyleColorDeleted SELECT *, CURRENT_TIMESTAMP FROM StyleColorImportArchive WHERE idStyle = ${idStyle}`)
+    await submitQuery(`INSERT INTO [Andromeda-DownFrom].[dbo].[StyleColorDeleted] SELECT *, CURRENT_TIMESTAMP FROM [Andromeda-DownFrom].[dbo].[StyleColorImportArchive] WHERE idStyle = ${idStyle}`)
     await getSQLServerData(
       `DELETE FROM [Andromeda-DownFrom].[dbo].[StyleColorImportArchive] WHERE idStyle = ${idStyle}`
     );
@@ -154,6 +154,7 @@ const deleteStyle = async (idStyle) => {
       `DELETE FROM [ECDB].[dbo].[StyleColorProfileDetail] WHERE id_style = ${idStyle}`
     );
   } catch (err) {
+    console.log(err)
     return err;
   }
 };
