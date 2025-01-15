@@ -3,7 +3,11 @@ const { type } = require('./config');
 const { andromedaAuthorization } = require('./authorization');
 const { getXlxs, sendErrorReport } = require('./functions/errorReporting');
 const { getSQLServerData, executeProcedure } = require('./sql');
-const { updateLivePeriod, forceDownCostSheet } = require('./andromeda');
+const {
+  updateLivePeriod,
+  forceDownCostSheet,
+  updateCF,
+} = require('./andromeda');
 
 // const server = app.listen(6009, async () => {
 const main = async () => {
@@ -65,6 +69,25 @@ const main = async () => {
     // If the live production period or live financial period have changed, force the cost sheet to come back from from Andromeda so that it can process through the ERP.
     const forceErrs = await forceDownCostSheet();
 
+    // Update the carryforward flag on the style
+    const cf = await getSQLServerData(`
+      SELECT CF.id_style as idStyle
+        ,CF.[Season]
+        ,CF.[Style]
+        ,CF.NewCarryForward
+        ,S.[Carry Forward] as OldCarryForward
+      FROM
+        [ECDB].[dbo].[CarryFwdStyleFlagUpdateWorkfile] CF
+      INNER JOIN
+        [Andromeda-DownFrom].[dbo].[StyleImportArchive] S
+      ON
+        CF.id_style = S.idStyle
+      WHERE
+        CF.NewCarryForward <> S.[Carry Forward]
+        AND S.MostRecent = 'Yes'`);
+    const cfErrors = await updateCF(cf);
+    console.log(cfErrors);
+
     // If there are any errors, send an email with the errors
     const errors = [
       ...seasonErrs,
@@ -72,6 +95,7 @@ const main = async () => {
       ...nuorderErrs,
       ...productionErrs,
       ...forceErrs,
+      ...cfErrors,
     ];
 
     if (errors.flat().length) {

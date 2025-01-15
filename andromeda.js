@@ -49,7 +49,7 @@ const updateLivePeriod = async (data, cat, field) => {
 
       // If the request is not successful, push the error to the errors array
       if (!res.data.IsSuccess) {
-        console.log('Andromeda error', res?.data?.Result)
+        console.log('Andromeda error', res?.data?.Result);
         errs.push({
           Style,
           idStyle,
@@ -68,7 +68,7 @@ const updateLivePeriod = async (data, cat, field) => {
       });
 
       if (error.message === 'Request failed with status code 404') {
-        await deleteStyle(idStyle)
+        await deleteStyle(idStyle);
       }
     }
   }
@@ -135,9 +135,11 @@ and C.ERPReady = 'Yes'`);
 
 const deleteStyle = async (idStyle) => {
   try {
-    console.log(idStyle)
+    console.log(idStyle);
     // Delete style related data
-    await submitQuery(`INSERT INTO [Andromeda-DownFrom].[dbo].[StyleDeleted] SELECT *, CURRENT_TIMESTAMP FROM [Andromeda-DownFrom].[dbo].[StyleImportArchive] WHERE idStyle = ${idStyle}`)
+    await submitQuery(
+      `INSERT INTO [Andromeda-DownFrom].[dbo].[StyleDeleted] SELECT *, CURRENT_TIMESTAMP FROM [Andromeda-DownFrom].[dbo].[StyleImportArchive] WHERE idStyle = ${idStyle}`
+    );
     await getSQLServerData(
       `DELETE FROM [Andromeda-DownFrom].[dbo].[StyleImportArchive] WHERE idStyle = ${idStyle}`
     );
@@ -146,7 +148,9 @@ const deleteStyle = async (idStyle) => {
     );
 
     // Delete style color related data
-    await submitQuery(`INSERT INTO [Andromeda-DownFrom].[dbo].[StyleColorDeleted] SELECT *, CURRENT_TIMESTAMP FROM [Andromeda-DownFrom].[dbo].[StyleColorImportArchive] WHERE idStyle = ${idStyle}`)
+    await submitQuery(
+      `INSERT INTO [Andromeda-DownFrom].[dbo].[StyleColorDeleted] SELECT *, CURRENT_TIMESTAMP FROM [Andromeda-DownFrom].[dbo].[StyleColorImportArchive] WHERE idStyle = ${idStyle}`
+    );
     await getSQLServerData(
       `DELETE FROM [Andromeda-DownFrom].[dbo].[StyleColorImportArchive] WHERE idStyle = ${idStyle}`
     );
@@ -154,13 +158,61 @@ const deleteStyle = async (idStyle) => {
       `DELETE FROM [ECDB].[dbo].[StyleColorProfileDetail] WHERE id_style = ${idStyle}`
     );
   } catch (err) {
-    console.log(err)
+    console.log(err);
     return err;
   }
+};
+
+const updateCF = async (cf) => {
+  const errors = [];
+  for (let i = 0; i < cf.length; ++i) {
+    // For every 100 records, request a new session
+    if (i % 100 === 0) {
+      await andromedaAuthorization();
+      console.log('New session requested');
+    }
+
+    // Extract the style and the id of that style in Andromeda
+    const { Season, Style, idStyle, NewCarryForward } = cf[i];
+    console.log(Season, Style, idStyle, NewCarryForward);
+
+    // Initialize the Andromeda body with the field to update
+    let body = { Entity: {} };
+    body.Entity.cat33 = NewCarryForward.trim() === 'Yes' ? true : false;
+
+    try {
+      // Update the style in Andromeda
+      const res = await axios.post(
+        `${url}/bo/DevelopmentStyle/${idStyle}`,
+        body
+      );
+
+      // If the request is not successful, push the error to the errors array
+      if (!res.data.IsSuccess) {
+        errors.push({
+          Style,
+          idStyle,
+          field: 'Carry Forward',
+          err: res.data.Result,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+      // If there is an unexpected error, push the error to the errors array
+      errors.push({
+        Style,
+        idStyle,
+        field: 'Carry Forward',
+        err: error.message,
+      });
+    }
+  }
+  return errors;
 };
 
 module.exports = {
   getAndromedaData,
   updateLivePeriod,
   forceDownCostSheet,
+  updateCF,
 };
