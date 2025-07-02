@@ -1,7 +1,6 @@
 // process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
-const { type } = require('./config');
 const { andromedaAuthorization } = require('./authorization');
-const { getXlxs, sendErrorReport } = require('./functions/errorReporting');
+const { sendErrorEmail } = require('./functions/errorReporting');
 const { getSQLServerData, executeProcedure } = require('./sql');
 const { updateLivePeriod, forceDownCostSheet } = require('./andromeda');
 
@@ -75,8 +74,7 @@ const main = async () => {
     ];
 
     if (errors.flat().length) {
-      getXlxs(errors.flat());
-      await sendErrorReport(type);
+      await sendErrorEmail(errors.flat());
     }
     process.exit(0);
   } catch (err) {

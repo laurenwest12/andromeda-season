@@ -1,75 +1,60 @@
-const { email, emailPass } = require('../config');
+const { from_email, from_pass } = require('../../globalConfig');
+const { toEmail, type } = require('../config');
+
 const nodemailer = require('nodemailer');
-const xl = require('excel4node');
-const fs = require('fs');
+const XLSX = require('xlsx');
 
-const getXlxs = (arr) => {
-  //Create a new Excel sheet
-  let wb = new xl.Workbook();
-  ws = wb.addWorksheet('Errors');
+const generateXlsx = async (array) => {
+  // Step 1: Dynamically get all unique keys from the array
+  const allKeys = Array.from(new Set(array.flatMap((obj) => Object.keys(obj))));
 
-  //Add headers
-  ws.cell(1, 1).string('Style');
-  ws.cell(1, 2).string('idStyle');
-  ws.cell(1, 3).string('Type');
-  ws.cell(1, 4).string('Error');
+  // Step 2: Normalize the data (fill missing keys with empty values)
+  const normalizedData = array.map((obj) => {
+    const normalizedObj = {};
+    allKeys.forEach((key) => {
+      normalizedObj[key] = obj[key] || ''; // Fill missing keys with empty strings
+    });
+    return normalizedObj;
+  });
 
-  //Loop through the error array to add to the worksheet
-  for (let i = 0; i < arr.length; ++i) {
-    let error = arr[i];
-    let row = i + 2;
+  // Step 3: Create an XLSX workbook and worksheet
+  const worksheet = XLSX.utils.json_to_sheet(normalizedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Error Report');
 
-    if (error.Style) {
-      ws.cell(row, 1).string(error.Style);
-    }
+  // Step 4: Write the workbook to a buffer
+  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
-    if (error.idStyle) {
-      ws.cell(row, 2).string(error.idStyle.toString());
-    }
-
-    if (error.field) {
-      ws.cell(row, 3).string(error.field.toString());
-    }
-
-    if (error.err) {
-      ws.cell(row, 4).string(error.err);
-    }
-  }
-
-  //Save the error file to the current directory
-  wb.write('AndromedaErrorReport.xlsx');
+  return buffer;
 };
 
-const sendErrorReport = async (type) => {
-  let transporter = nodemailer.createTransport({
-    host: 'smtp-mail.outlook.com',
-    secure: false,
+const sendErrorEmail = async (array) => {
+  // Step 1: Generate the XLSX file
+  const xlsxBuffer = await generateXlsx(array);
+  // Step 2: Configure the email transporter
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.office365.com', // Try Office 365 SMTP
     port: 587,
+    secure: false,
     auth: {
-      user: email,
-      pass: emailPass,
+      user: from_email,
+      pass: from_pass,
     },
   });
 
+  // Step 3: Send the email with the XLSX attachment
   await transporter.sendMail({
-    from: '"Lauren West" <lwest@echodesign.com>',
-    to: `${email}`,
+    from: from_email,
+    to: toEmail,
     subject: `Andromeda ${type} Error Report`,
-    text: `Attached are the errors from the Andromeda ${type} update.`,
+    text: `Attached are the errors from ${type}.`,
     attachments: [
       {
-        filename: 'AndromedaErrorReport.xlsx',
-        path: './AndromedaErrorReport.xlsx',
-        contentType:
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        filename: 'ErrorReport.xlsx',
+        content: xlsxBuffer,
       },
     ],
   });
-
-  fs.unlinkSync('./AndromedaErrorReport.xlsx');
 };
 
-module.exports = {
-  getXlxs,
-  sendErrorReport,
-};
+module.exports = { sendErrorEmail };
